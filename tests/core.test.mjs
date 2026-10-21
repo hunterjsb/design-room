@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+async function load(file){const r=await build({entryPoints:[file],bundle:true,write:false,platform:'node',format:'cjs',packages:'external'});const module={exports:{}};new Function('require','module','exports',r.outputFiles[0].text)(require,module,module.exports);return module.exports}
+const {issueSession,verifySession,githubIdentity}=await load('api/auth.ts');
+const {reviseCatalog,validateBoard,assetKey}=await load('api/model.ts');
+const {boardContext}=await load('lib/board.ts');
+const {splitTableRow}=await load('lib/markdown-table.ts');
+const user={login:'tester',name:'Test',avatar:''},key='test-session-secret';
+test('sessions authenticate, expire, and reject tampering',()=>{const token=issueSession(user,key,1000);assert.deepEqual(verifySession(token,key,1001),user);assert.throws(()=>verifySession(token,'wrong',1001));assert.throws(()=>verifySession(token,key,1000+8*3600));assert.throws(()=>verifySession(token+'x',key,1001))});
+test('GitHub authentication requires an approved write role',async()=>{const mock=role=>async url=>Response.json(url.endsWith('/user')?{login:'tester'}:{permission:role});assert.equal((await githubIdentity('token','owner/repo',mock('write'))).login,'tester');await assert.rejects(githubIdentity('token','owner/repo',mock('read')),/write membership/);await assert.rejects(githubIdentity(undefined,'owner/repo',mock('admin')),/valid GitHub token/)});
+const catalog={pk:'CATALOG',revision:3,boards:[{id:'a',title:'A',type:'freeform',archived:false,deleted:false}],activeIds:['a']};
+test('catalog changes check revision and preserve deletion safety',()=>{assert.throws(()=>reviseCatalog(catalog,{action:'rename',revision:2,id:'a',title:'new'},''),/changed/);assert.throws(()=>reviseCatalog(catalog,{action:'delete',revision:3,id:'a'},''),/Refresh/);const r=reviseCatalog(catalog,{action:'create',revision:3,title:'New',type:'document'},'b');assert.deepEqual(r.catalog.activeIds,['a','b']);assert.equal(catalog.boards.length,1);assert.equal(r.catalog.revision,4)});
+const node={id:'n',type:'note',title:'Idea',body:'',x:0,y:0,w:100,h:100,color:'sand'};
+test('edit attribution is server-owned and unchanged nodes retain it',()=>{const previous={nodes:[{...node,lastEdited:{by:'original',at:'before'}}],edges:[]};const forged={nodes:[{...node,lastEdited:{by:'forged',at:'fake'}}],edges:[]};assert.equal(validateBoard(forged,catalog.boards[0],previous,'tester','now').nodes[0].lastEdited.by,'original');forged.nodes[0].title='Edited';assert.deepEqual(validateBoard(forged,catalog.boards[0],previous,'tester','now').nodes[0].lastEdited,{by:'tester',at:'now'});assert.throws(()=>validateBoard({...forged,document:{markdown:'x'}},catalog.boards[0],previous,'tester','now'),/board type/)});
+test('asset keys cannot escape private asset namespaces',()=>{assert.equal(assetKey('/assets/uploads/test.png'),'uploads/test.png');assert.equal(assetKey('/imports/reference/My%20Board.pdf'),'imports/reference/My Board.pdf');for(const p of ['boards/a.json','imports/../secret','uploads//x','uploads/%2e%2e/x'])assert.throws(()=>assetKey(p))});
+test('agent context distinguishes spatial hints from explicit links',()=>{const b={nodes:[node,{...node,id:'near',x:150}],edges:[]};const free=boardContext(b,'freeform','a');assert.equal(free.proximity.length,1);assert.equal(free.proximity[0].explicitlyConnected,false);assert.equal(boardContext(b,'kanban','a').proximity.length,0)});
+test('wiki references stay intact inside Markdown tables',()=>{assert.deepEqual(splitTableRow('| A | [[board:a#n|Reference]] |'),['A','[[board:a#n|Reference]]'])});

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+.env*
+!.env.example
+infra/Pulumi.*.yaml
+!infra/Pulumi.example.yaml
+infra/.pulumi/
+work/
+*.tsbuildinfo

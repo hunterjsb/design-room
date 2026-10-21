@@ -1,0 +1,8 @@
+config:
+  aws:region: us-east-1
+  design-room:membershipRepository: OWNER/MEMBERSHIP_REPO
+  design-room:allowedOrigins:
+    - https://OWNER.github.io
+    - http://localhost:5173
+    - http://127.0.0.1:5173
+  # Set with: pulumi config set --secret sessionKey <random-value>
