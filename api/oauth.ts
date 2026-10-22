@@ -11,5 +11,5 @@ export async function exchangeGitHubCode(input:unknown,config:OAuthConfig,reposi
   if(typeof data.access_token!=='string')throw new HttpError(401,'This GitHub sign-in expired or was already used. Start again.');
   // Verify identity AND current repository membership before issuing any app session.
   // Neither the user access token nor refresh token is persisted.
-  return githubIdentity(data.access_token,repository,request);
+  return githubIdentity(data.access_token,repository,request,'app');
 }
