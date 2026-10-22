@@ -17,7 +17,7 @@ const entry={id:'roadmap',title:'Roadmap',type:'kanban',archived:false,deleted:f
 test('large roadmaps keep release proposals out of task status and page work cards',()=>{
  const nodes=Array.from({length:4900},(_,i)=>({...node,id:'work-'+i,title:'Work '+i,planning:defaultPlanning()}));
  nodes.push(...Array.from({length:100},(_,i)=>({...node,id:'release-'+i,title:'Release '+i,releasePlan:{version:'0.'+i,phase:'Alpha',state:'proposal',documentRef:'[[board:releases#release-'+i+']]'}})));
- const b=validateBoard({nodes,edges:[]},entry,{nodes:[],edges:[]},'test','now');assert.equal(b.nodes.length,5000);
+ const b=validateBoard({nodes,edges:[]},entry,{nodes:[],edges:[]},'test','now');assert.equal(b.nodes.length,5000);const deferred=validateBoard({nodes:[{...b.nodes.at(-1),releasePlan:{...b.nodes.at(-1).releasePlan,state:'deferred'}}],edges:[]},entry,{nodes:[],edges:[]},'test','now');assert.equal(deferred.nodes[0].releasePlan.state,'deferred');
  const context=boardContext(b,'kanban','roadmap');assert.equal(context.development.items.length,4900);assert.equal(context.releasePlans.length,100);assert.deepEqual(context.proximity,[]);assert.deepEqual(context.groups,[]);
  const html=renderToStaticMarkup(React.createElement(KanbanBoard,{board:b,selected:null,search:'',disabled:false,onChange(){},onSelect(){},onAdd(){},onAddRelease(){},onOpen(){}}));
  assert.equal((html.match(/class="work-card /g)||[]).length,25);assert.equal((html.match(/class="release-plan-row /g)||[]).length,20);assert(html.includes('4900'));assert(!html.includes('Work 4899</button>'));

@@ -78,3 +78,5 @@ main{position:relative}#board-controls{flex-shrink:0}#board-controls[hidden]{dis
 .release-card:has(.release-preview) .release-card-heading{margin-bottom:10px;padding-bottom:10px}
 @media(max-width:1000px){.release-plan-row{grid-template-columns:minmax(180px,1fr) auto auto}.release-plan-row>div{grid-column:1/3}.release-card-heading{flex-wrap:wrap}.release-card-heading h3{min-width:55%}.collection-filters{margin-left:0}}
 @media(max-width:650px){.release-plan-row{grid-template-columns:1fr auto}.release-plan-row>span:nth-child(2){display:none}.release-plan-row>div{grid-column:1}.release-plan-row>button:last-child{grid-column:2}.release-plan-heading{align-items:flex-start}.release-plan-row,.release-plan-heading{padding:12px}.release-card{padding:17px}.release-browser-tools{align-items:stretch}.collection-filters select{max-width:130px}}
+
+.release-plan-state.deferred{background:#d9d5cd;color:#645c50;border-color:#b8afa1}
