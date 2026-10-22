@@ -8,7 +8,7 @@ Open the `siteUrl` in [workspace.config.json](workspace.config.json). Workspace 
 
 Click **Sign in with GitHub**, approve the app, and return to your boards. The app requests only repository metadata read access and verifies your write membership before creating an 8-hour session. GitHub tokens are exchanged on the backend and discarded after verification.
 
-The workspace administrator enables this once with `npm run setup:github`. Follow its local registration link, register the preconfigured GitHub App, then install it on **only the membership repository**. The setup helper automatically stores the client secret as encrypted Pulumi configuration and deploys it to Lambda. Nothing secret goes into the public app or repository. GitHub App registration belongs to your GitHub account; the helper discards the unused app private key and webhook secret. Other members do not need to run setup or use a terminal.
+The workspace administrator enables this once with `npm run setup:github`. Follow its local registration link, register the preconfigured GitHub App, then install it on **only the membership repository**. The setup helper automatically stores the client secret as encrypted Pulumi configuration and deploys it to Lambda. Nothing secret goes into the public app or repository. GitHub App registration belongs to your GitHub account; the helper discards the unused app private key and webhook secret. Other members do not need to run setup or install the app themselves. If installation or repository selection is missing, sign-in displays an in-app setup screen with the exact repository, a GitHub installation link, and a Continue button. The owner completes setup in another tab and continues sign-in here.
 
 Optional developer fallback, for local GitHub CLI sign-in:
 
@@ -24,25 +24,17 @@ The Developer sign-in options also accept a fine-grained GitHub personal access 
 
 ## Coding agents
 
-Use the standard CLI; no Sites tools or special agent integration are required:
+Agents do not need to clone this repository. Open the site's **Agent context** panel and copy the connection instructions, or follow `llms.txt`, `agents.json`, or `agents.html` beside the homepage. The instructions are public; board content stays private.
 
-```sh
-npm run board -- list
-npm run board -- read BOARD_ID
-npm run board -- context BOARD_ID
-npm run board -- docs
-npm run board -- docs docs/example.md
-```
+Download the hosted standalone `agent.mjs` client to a temporary/private directory and run it with Node 22+. It has no package dependencies. Its `list`, `read`, `context`, `save`, `catalog`, `docs`, `asset`, and `export` commands use the live API directly. An existing GitHub CLI login works automatically, and the GitHub token is never stored.
 
-To edit safely, save the `read` JSON response outside this public repository, modify its `board`, and keep its `revision`. Then:
+Without GitHub CLI, use `node /tmp/design-room-agent.mjs auth pair --label "My agent"`. The agent displays a short code and approval URL. A signed-in member checks the matching code and explicitly grants read-only or read/write access. The default is read-only even when write was requested. Approval requests expire after ten minutes; approved sessions last eight hours. The approval page can revoke access immediately. The device secret and issued session never appear in the approval URL or command output. Local session files use owner-only permissions; `DESIGN_ROOM_SESSION_FILE` overrides their location.
 
-```sh
-npm run board -- save BOARD_ID /private/path/board-envelope.json
-```
+Any HTTP-capable agent can use the pairing and board APIs directly; the client is optional. See [API](docs/API.md). The site's static instructions contain the live API address and request examples, so this repository is not needed to discover endpoints or authenticate.
 
-A stale revision returns HTTP 409. Re-read, compare, and merge deliberately. The `context` view includes explicit edges, spatial frames, nearby unconnected notes, document links, and development status. Proximity is a hint; it is not an explicit relationship. See [AGENTS.md](AGENTS.md) and [API](docs/API.md).
+To edit safely, read a board's `{board,revision}` envelope, change only the intended fields, and submit it with `save BOARD_ID /private/path/envelope.json` or `PUT /api/board?board=ID`. A stale revision returns 409. Re-read, compare, and merge deliberately. Never commit private exports, session files, game assets, or document snapshots to a public repository.
 
-`npm run board -- export /private/path/backup` backs up board JSON. Images and repository document snapshots live in private S3 and are protected by bucket versioning. Never commit exports, screenshots, game assets, or workspace documents here.
+For agents already working in this checkout, `npm run board -- list` and the existing repository CLI remain supported. Agent context includes explicit edges, spatial frames, nearby unconnected notes, document references, and development status. Proximity is a hint, not a confirmed relationship.
 
 ## Develop
 

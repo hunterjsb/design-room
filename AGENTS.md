@@ -3,6 +3,7 @@
 This is a public application repository. Workspace content is private runtime data, not source code.
 
 - Never commit board exports, game notes, Markdown snapshots, imported PDFs/images, credentials, personal tokens, or Pulumi production configuration.
+- No app clone is needed to access boards: the deployed site exposes `llms.txt`, `agents.json`, `agents.html`, and a standalone dependency-free `agent.mjs` client. Use an existing GitHub CLI login or request a browser-approved code. Read-only is the default; request explicit write access for edits. Never approve an agent request on another person’s behalf.
 - Read `workspace.config.json` for endpoint and site URL. Use `npm run board -- list`, `read ID`, `context ID`, and `docs [path]` to inspect the authenticated workspace. CLI authentication uses `gh auth token` in memory.
 - Save edits using `npm run board -- save ID /private/path/envelope.json`. Read first; preserve the revision and unrelated fields. A 409 requires a fresh read and deliberate merge. Never blindly retry writes.
 - Keep private temporary exports outside this checkout or in ignored `work/`.

@@ -8,3 +8,8 @@ infra/Pulumi.*.yaml
 infra/.pulumi/
 work/
 *.tsbuildinfo
+
+public/agent.mjs
+public/agents.json
+public/agents.html
+public/llms.txt

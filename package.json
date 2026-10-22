@@ -8,13 +8,14 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
+    "build": "node scripts/build-agent.mjs && tsc --noEmit && vite build",
     "build:api": "node scripts/build-api.mjs",
     "test": "node --test tests/*.test.mjs",
     "board": "node scripts/board.mjs",
     "login": "node scripts/board.mjs login",
     "infra": "node scripts/infra.mjs",
-    "setup:github": "node scripts/setup-github.mjs"
+    "setup:github": "node scripts/setup-github.mjs",
+    "predev": "node scripts/build-agent.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.0.0",

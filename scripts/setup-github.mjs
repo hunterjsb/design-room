@@ -23,6 +23,7 @@ const server=createServer(async(req,res)=>{
     if(!r.ok)throw Error('GitHub could not complete app registration.');
     const app=await r.json();if(typeof app.client_id!=='string'||typeof app.client_secret!=='string'||typeof app.slug!=='string')throw Error('GitHub returned incomplete app settings.');
     await run(['config','set','githubClientId',app.client_id]);
+    await run(['config','set','githubAppSlug',app.slug]);
     await run(['config','set','--secret','githubClientSecret'],app.client_secret+'\n');
     await run(['config','set','githubRedirectUri',siteUrl]);
     const install='https://github.com/apps/'+encodeURIComponent(app.slug)+'/installations/new';

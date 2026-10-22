@@ -2,7 +2,8 @@ export type PendingLogin={state:string,verifier:string,createdAt:number,returnSe
 export function acceptCallback(pending:PendingLogin|null,state:string|null,now=Date.now()){
   if(!pending||!state||pending.state!==state||!Number.isFinite(pending.createdAt)||now-pending.createdAt>10*60*1000||now<pending.createdAt||!/^[A-Za-z0-9_-]{43}$/.test(pending.verifier))throw Error('This sign-in request expired or belongs to another tab. Please start again.');
   // Only restore local board navigation, never a redirect URL or other query parameters.
-  const id=new URLSearchParams(pending.returnSearch).get('board');
+  const query=new URLSearchParams(pending.returnSearch),id=query.get('board'),agent=query.get('agent');
+  if(agent&&/^[A-Z0-9]{5}-?[A-Z0-9]{5}$/.test(agent))return {verifier:pending.verifier,returnSearch:'?agent='+agent};
   return {verifier:pending.verifier,returnSearch:id&&/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(id)?'?board='+encodeURIComponent(id):''};
 }
 function base64url(bytes:Uint8Array){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
