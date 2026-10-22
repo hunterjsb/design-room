@@ -1,6 +1,6 @@
 # Design Room
 
-A shared design workspace with freeform canvases, Kanban boards, and Markdown documents. Boards, images, documents, and workspace settings load from an authenticated API. The public repository and GitHub Pages build contain application code only.
+A shared design workspace with freeform canvases, Kanban boards, Markdown documents, and questionnaires. Boards, images, documents, and workspace settings load from an authenticated API. The public repository and GitHub Pages build contain application code only.
 
 ## Open and sign in
 
@@ -74,3 +74,23 @@ State lives in `s3://design-room-pulumi-state-ACCOUNT_ID`. The passphrase is sto
 To change membership repository or allowed origins, use Pulumi configuration in the `infra` directory and redeploy. To invalidate every app session immediately, rotate the encrypted `sessionKey` and redeploy. Anyone with an approved role can edit all boards; there is no read-only workspace role yet.
 
 Private migration utility: `node scripts/migrate.mjs PRIVATE_BACKUP OLD_SOURCE WORKSPACE_TITLE`. It reads local private exports and requires ignored `work/infra-outputs.json`; it refuses to replace an existing catalog. Do not use it against an active workspace.
+
+## Questionnaires and explicit handoffs
+
+Create a **Questionnaire** board for design questions or playtest criteria. Prompts and source links are separate from answers. Drafts save after a short pause; edits during a save remain local until the next save. Concurrent changes stop autosave and preserve the draft for export/reconciliation. Editing and marking ready never send messages. **Review & submit** shows the exact answers and recipients before the human confirms. Only ready, nonblank answers are included. Later edits create a new draft; previous submissions retain immutable wording, author and board revision.
+
+The private `CONFIG.reviewRouting` setting contains `{coordinator, copies}` agent names. Every submission goes to the coordinator; individual questions opt into specialist copies. These names and all question content are runtime configuration, never application source. Paired agent sessions can read submissions and, with authorized write access, prepare questions; they cannot submit human decisions or acknowledge delivery.
+
+Submissions atomically enter a durable outbox in the existing DynamoDB table, with immutable S3 snapshots. The local `scripts/review-relay.mjs` service checks only this explicit-submission queue every 30 seconds. It sends `handoff` events through the existing bridge CLI, with exact questions/answers, stable references, revision, author and a stable per-recipient/per-part dedupe key. Long answers split into numbered parts without changing their text. It acknowledges the outbox only after the bridge persists every part. A restart repeats the same dedupe keys, preventing duplicate handoffs. No bridge transport code, automatic board-status writes or game-repo changes are involved.
+
+On the bridge host, with an existing GitHub CLI login and the sender registered in the bridge:
+
+```sh
+node scripts/install-review-relay.mjs
+systemctl --user status design-room-review-relay.service
+journalctl --user -u design-room-review-relay.service
+# Disable delivery without deleting queued submissions:
+systemctl --user disable --now design-room-review-relay.service
+```
+
+The service uses GitHub CLI credentials in memory, refreshes its API session, and remains quiet while healthy. It survives chat closure and starts on future logins; it requires this host and bridge to be running. `DESIGN_ROOM_BRIDGE`, `DESIGN_ROOM_SENDER` and `DESIGN_ROOM_API` override local defaults. The browser shows queued versus delivered-to-bridge status and a service heartbeat. Delivery is not agent review or build approval. The submission is the human's decision on the answered questions; canonical documentation and build planning stay with the coordinator.

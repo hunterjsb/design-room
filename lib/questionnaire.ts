@@ -1,0 +1,1 @@
+export function answerFingerprintSource(question:{prompt:string,answer:string,source:string,copyTo:string[]}){return JSON.stringify([question.prompt,question.answer,question.source,[...question.copyTo].sort()]);}

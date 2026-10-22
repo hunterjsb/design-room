@@ -22,7 +22,7 @@ For agents and developer fallbacks, `POST /api/auth/github` accepts `{ "token": 
 | `GET /api/assets?key=imports/...` | `{url,key}` five-minute signed asset URL |
 | `POST /api/assets` | `{type,size}` yields S3 presigned POST fields and canonical `image` path |
 
-Catalog actions: `create` (`title`, `type`), `rename` (`id`, `title`), `delete` (`id`, `boardRevision`), `archive` (`id`, `archived`), `move` (`id`, `direction: -1 or 1`), `reorder` (`id`, `beforeId`). Every action includes `revision`. Types are `freeform`, `kanban`, and `document`. Deletes are soft deletes; archived boards remain readable. Deletion checks both catalog and content revision.
+Catalog actions: `create` (`title`, `type`), `rename` (`id`, `title`), `delete` (`id`, `boardRevision`), `archive` (`id`, `archived`), `move` (`id`, `direction: -1 or 1`), `reorder` (`id`, `beforeId`). Every action includes `revision`. Types are `freeform`, `kanban`, `document`, and `questionnaire`. Deletes are soft deletes; archived boards remain readable. Deletion checks both catalog and content revision.
 
 Writes can return 409 when another editor saved first. Keep the local draft, re-read, compare, and merge. Validation errors return 400, unauthenticated requests 401, unapproved membership or origins 403, and missing/deleted boards 404. Document boards contain `document.markdown` with empty `nodes` and `edges`; other types cannot contain a document.
 
@@ -45,3 +45,17 @@ The public frontend serves `agents.json` (connection metadata), `llms.txt` (plai
 Pairing records have a DynamoDB TTL for cleanup, but expiration is enforced by the API independently of TTL deletion. Polling cannot recover a token after it has been claimed; start a new request if delivery was lost. Revocation does not delete board history or content.
 
 Missing GitHub app installation/selection returns HTTP 403 with `code: "github_installation_required"` and `setup: {repository, owner, installationUrl}` after GitHub identity verification. The browser displays a guided setup screen, opens GitHub installation in another tab, and repeats OAuth after the owner clicks Continue. Other members need write membership; they do not each install the app. OAuth preserves an agent approval code across sign-in.
+
+## Questionnaires and review delivery
+
+Questionnaire boards have no edges or document. Each note node has `question: {kind: "design" | "playtest", answer, ready, source, copyTo: []}`; its title is the short label and its body is the exact prompt. Source supports existing wiki links. Answer edits are drafts even when `ready` is true. The board save and attribution use the normal revision contract. Context exposes ordered questions and source references without geometric or task-status meaning.
+
+| Route | Behavior |
+| --- | --- |
+| `GET /api/reviews?board=ID` | Recent submission metadata, configured routing and relay heartbeat |
+| `GET /api/reviews/snapshot?id=UUID` | Immutable submitted questions, exact answers, author, recipients and board revision |
+| `POST /api/reviews` | Human-only `{requestId: UUID, boardId, revision, questionIds}`. Up to 20 explicitly selected ready/nonblank answers, captured from the saved board. Board/catalog CAS and queue insertion are atomic. Reusing the same request ID returns the original receipt; different content with that ID returns 409. |
+| `POST /api/reviews/poll` | Human-session local relay only: pending explicit submissions and service heartbeat. Does not poll boards. |
+| `POST /api/reviews/ack` | Human-session relay `{id, receipts: [{recipient, ids: [bridge-message-UUID]}]}`. All recipients require persisted bridge receipts; removes the pending entry transactionally. Repeat acknowledgement is idempotent. |
+
+All routes require authentication. Paired agents can read history and snapshots but cannot submit decisions, poll delivery or acknowledge it, even with board-write scope. A submission records the submitting human's decisions on the answered questions; it does not authorize a build. Queue insertion does not modify the board or its draft flags. Immutable snapshots do not change when the board is edited or removed. Specialist copies contain only the relevant questions. See the delivery service instructions in the README.
