@@ -11,3 +11,5 @@ This is a public application repository. Workspace content is private runtime da
 - Use stable IDs when making references. Don’t derive development status from document checklists or vice versa.
 - Run `npm test` and `npm run build` for app changes. Run `npm run build:api` and review `npm run infra -- preview` before backend deployments. Never publish private data to make a test pass.
 - Backend source is in `api/`, infrastructure in `infra/`, and generic UI in `src/` and `components/`.
+
+- Write questionnaire prompts that stand alone in plain words. Include the specific acceptance numbers and explain unfamiliar terms; do not rely on ‘above’, ‘below’ or a linked board for the question to make sense. Preserve exact brief wording in optional `question.sourceWording`, shown collapsed as provenance. Rewording never supplies a human answer or adds scope.
