@@ -48,7 +48,7 @@ Missing GitHub app installation/selection returns HTTP 403 with `code: "github_i
 
 ## Questionnaires and review delivery
 
-Questionnaire boards have no edges or document. Each note node has `question: {kind: "design" | "playtest", answer, ready, source, copyTo: []}`; its title is the short label and its body is the exact prompt. Source supports existing wiki links. Answer edits are drafts even when `ready` is true. The board save and attribution use the normal revision contract. Context exposes ordered questions and source references without geometric or task-status meaning.
+Questionnaire boards have no edges or document. Each note node has `question: {kind: "design" | "playtest", answer, ready, source, copyTo: []}`; its title is the short label and its body is the exact prompt. Source supports existing wiki links. Optional `question.chatAnswer: {text, prompt, by, date, source}` attributes an explicitly authorized transcription from chat. It is displayed as answered in chat only while the draft prompt and answer match that recorded wording; it creates no submission or notification. Answer edits are drafts even when `ready` is true. The board save and attribution use the normal revision contract. Context exposes ordered questions and source references without geometric or task-status meaning.
 
 | Route | Behavior |
 | --- | --- |
