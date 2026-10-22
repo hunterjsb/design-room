@@ -22,7 +22,7 @@ For agents and developer fallbacks, `POST /api/auth/github` accepts `{ "token": 
 | `GET /api/assets?key=imports/...` | `{url,key}` five-minute signed asset URL |
 | `POST /api/assets` | `{type,size}` yields S3 presigned POST fields and canonical `image` path |
 
-Catalog actions: `create` (`title`, `type`), `rename` (`id`, `title`), `delete` (`id`, `boardRevision`), `archive` (`id`, `archived`), `move` (`id`, `direction: -1 or 1`), `reorder` (`id`, `beforeId`). Every action includes `revision`. Types are `freeform`, `kanban`, `document`, and `questionnaire`. Deletes are soft deletes; archived boards remain readable. Deletion checks both catalog and content revision.
+Catalog actions: `create` (`title`, `type`), `rename` (`id`, `title`), `delete` (`id`, `boardRevision`), `archive` (`id`, `archived`), `pin` (`id`, `pinned`), `move` (`id`, `direction: -1 or 1`), `reorder` (`id`, `beforeId`). Every action includes `revision`. Types are `freeform`, `kanban`, `document`, and `questionnaire`. Deletes are soft deletes; archived boards remain readable. Deletion checks both catalog and content revision. Optional entry `pinned` defaults to false for legacy entries. Pins are shared workspace state. Move/reorder stay within pinned, regular or archived sections. Archiving clears a pin; restore before pinning an archived board.
 
 Writes can return 409 when another editor saved first. Keep the local draft, re-read, compare, and merge. Validation errors return 400, unauthenticated requests 401, unapproved membership or origins 403, and missing/deleted boards 404. Document boards contain `document.markdown` with empty `nodes` and `edges`; other types cannot contain a document.
 

@@ -47,6 +47,8 @@ npm test
 npm run build
 ```
 
+Use a board’s menu to **Pin board** or **Unpin board**. Pins are shared across the workspace and appear above other boards. Pinned boards can be reordered within their section; archiving a board removes its pin.
+
 All views use live database editing. Kanban, documents, and freeform boards keep independent content. Wiki links such as `[[docs/example.md|Example]]` and `[[board:BOARD_ID#ITEM_ID|Item]]` work in notes and Markdown tables.
 
 ## Hosting and infrastructure

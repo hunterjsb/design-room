@@ -46,3 +46,16 @@ test('approving an agent grants only the selected permission and leaves GitHub c
 test('agent JWTs retain scope and reads cannot mutate or approve other agents',()=>{const agent={id:'ABCDE23456',label:'Agent',scope:'read'},jwt=issueSession(user,key,1000,agent);assert.deepEqual(verifySession(jwt,key,1001).agent,agent);requireAgentReadOnly('GET','read');for(const method of ['POST','PUT','PATCH','DELETE'])assert.throws(()=>requireAgentReadOnly(method,'read'),/read-only/);requireAgentReadOnly('PUT','write');});
 test('OAuth returns to an agent approval request after sign-in',()=>{const pending={state:'state',verifier,createdAt:1000,returnSearch:'?agent=ABCDE-23456&redirect=https://evil.invalid'};assert.equal(acceptCallback(pending,'state',1001).returnSearch,'?agent=ABCDE-23456');});
 test('missing GitHub installation returns structured setup instructions',async()=>{const mock=async url=>Response.json(url.endsWith('/user')?{login:'tester'}:{installations:[]});await assert.rejects(githubIdentity('token','owner/repo',mock,'app'),e=>e.status===403&&e.details.code==='github_installation_required'&&e.details.setup.repository==='owner/repo');});
+
+test('shared pins keep reordering inside its section and archive removes the pin',()=>{
+ const c={pk:'CATALOG',revision:1,boards:[{...catalog.boards[0],id:'a',pinned:true},{...catalog.boards[0],id:'b',pinned:true},{...catalog.boards[0],id:'c'},{...catalog.boards[0],id:'d',archived:true}],activeIds:['a','b','c','d']};
+ assert.throws(()=>reviseCatalog(c,{action:'pin',id:'c',pinned:true,revision:0},''),/changed/);
+ assert.equal(reviseCatalog(c,{action:'pin',id:'c',pinned:true,revision:1},'').catalog.boards.find(b=>b.id==='c').pinned,true);
+ assert.equal(reviseCatalog(c,{action:'pin',id:'a',pinned:false,revision:1},'').catalog.boards[0].pinned,false);
+ assert.throws(()=>reviseCatalog(c,{action:'pin',id:'d',pinned:true,revision:1},''),/Restore/);
+ assert.throws(()=>reviseCatalog(c,{action:'pin',id:'c',revision:1},''),/Choose/);
+ assert.deepEqual(reviseCatalog(c,{action:'move',id:'b',direction:1,revision:1},'').catalog.boards.map(b=>b.id),['a','b','c','d']);
+ assert.deepEqual(reviseCatalog(c,{action:'move',id:'b',direction:-1,revision:1},'').catalog.boards.map(b=>b.id),['b','a','c','d']);
+ assert.throws(()=>reviseCatalog(c,{action:'reorder',id:'c',beforeId:'a',revision:1},''),/same section/);
+ const archived=reviseCatalog(c,{action:'archive',id:'a',archived:true,revision:1},'').catalog.boards[0];assert.equal(archived.pinned,false);assert.equal(archived.archived,true);assert.equal(c.boards[0].pinned,true);
+});
