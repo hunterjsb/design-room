@@ -1,3 +1,4 @@
+import {exchangeGitHubCode} from './oauth';
 import {randomUUID} from 'node:crypto';
 import {DynamoDBClient} from '@aws-sdk/client-dynamodb';
 import {DynamoDBDocumentClient,GetCommand,TransactWriteCommand,PutCommand} from '@aws-sdk/lib-dynamodb';
@@ -18,6 +19,8 @@ async function board(id:string,c:Catalog){const info=c.boards.find(b=>b.id===id&
 async function uploadBoard(id:string,board:any,revision:number){const key='boards/'+id+'/'+revision+'-'+randomUUID()+'.json',body=JSON.stringify(board);if(Buffer.byteLength(body)>2000000)throw new HttpError(413,'Board JSON must be under 2 MB.');await s3.send(new PutObjectCommand({Bucket:bucket,Key:key,Body:body,ContentType:'application/json',ServerSideEncryption:'AES256'}));return key}
 function cleanPath(path:string){const key=decodeURIComponent(path);if(!key||key.split('/').some(p=>!p||p==='.'||p==='..')||!/^([\w.-]+\/)*[\w .-]+\.md$/.test(key))throw new HttpError(400,'Invalid document path.');return key}
 export async function handler(event:any){try{const method=event.requestContext?.http?.method||event.httpMethod,path=event.rawPath||event.path,headers=Object.fromEntries(Object.entries(event.headers||{}).map(([k,v])=>[k.toLowerCase(),String(v)])),origin=headers.origin;if(origin&&!origins.includes(origin))throw new HttpError(403,'Origin is not allowed.');if(method==='OPTIONS')return json({});if(path==='/api/health')return json({status:'ok'});const raw=event.isBase64Encoded?Buffer.from(event.body||'','base64').toString():event.body||'';if(Buffer.byteLength(raw)>2100000)throw new HttpError(413,'Request is too large.');let input:any={};if(raw){try{input=JSON.parse(raw)}catch{throw new HttpError(400,'Invalid JSON.')}}
+if(path==='/api/auth/github/config'&&method==='GET')return json({configured:!!(process.env.GITHUB_CLIENT_ID&&process.env.GITHUB_CLIENT_SECRET&&process.env.GITHUB_REDIRECT_URI),clientId:process.env.GITHUB_CLIENT_ID||'',redirectUri:process.env.GITHUB_REDIRECT_URI||''});
+if(path==='/api/auth/github/callback'&&method==='POST'){const user=await exchangeGitHubCode(input,{clientId:process.env.GITHUB_CLIENT_ID||'',clientSecret:process.env.GITHUB_CLIENT_SECRET||'',redirectUri:process.env.GITHUB_REDIRECT_URI||''},membershipRepo);return json({token:issueSession(user,signingKey),user,expiresIn:8*3600})}
 if(path==='/api/auth/github'&&method==='POST'){const user=await githubIdentity(input.token,membershipRepo);return json({token:issueSession(user,signingKey),user,expiresIn:8*3600})}
 const auth=headers.authorization||'',user=verifySession(auth.replace(/^Bearer /i,''),signingKey);const now=new Date().toISOString();
 if(path==='/api/me'){const config=await item('CONFIG');return json({user,workspace:config?.workspace||{title:'Design Room'},membershipRepository:membershipRepo})}

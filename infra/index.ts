@@ -2,6 +2,7 @@ import * as pulumi from '@pulumi/pulumi';
 import * as aws from '@pulumi/aws';
 const config=new pulumi.Config(),region=aws.config.region||'us-east-1';
 const allowedOrigins=config.requireObject<string[]>('allowedOrigins'),membershipRepository=config.require('membershipRepository'),sessionKey=config.requireSecret('sessionKey');
+const githubClientId=config.get('githubClientId')||'',githubClientSecret=config.getSecret('githubClientSecret')||pulumi.output(''),githubRedirectUri=config.get('githubRedirectUri')||'';
 const tags={Application:'design-room',ManagedBy:'Pulumi'};
 const table=new aws.dynamodb.Table('workspace',{billingMode:'PAY_PER_REQUEST',hashKey:'pk',attributes:[{name:'pk',type:'S'}],pointInTimeRecovery:{enabled:true},serverSideEncryption:{enabled:true},tags}, {protect:true});
 const bucket=new aws.s3.BucketV2('assets',{tags}, {protect:true});
@@ -13,7 +14,7 @@ const role=new aws.iam.Role('api-role',{assumeRolePolicy:JSON.stringify({Version
 new aws.iam.RolePolicyAttachment('api-logs',{role:role.name,policyArn:aws.iam.ManagedPolicy.AWSLambdaBasicExecutionRole});
 new aws.iam.RolePolicy('api-data',{role:role.id,policy:pulumi.all([table.arn,bucket.arn]).apply(([tableArn,bucketArn])=>JSON.stringify({Version:'2012-10-17',Statement:[{Effect:'Allow',Action:['dynamodb:GetItem','dynamodb:PutItem','dynamodb:ConditionCheckItem'],Resource:tableArn},{Effect:'Allow',Action:['s3:GetObject','s3:PutObject','s3:DeleteObject'],Resource:bucketArn+'/*'}]}))});
 const api=new aws.apigatewayv2.Api('api',{protocolType:'HTTP',corsConfiguration:{allowOrigins:allowedOrigins,allowMethods:['GET','POST','PUT','OPTIONS'],allowHeaders:['authorization','content-type'],maxAge:300},tags});
-const fn=new aws.lambda.Function('api-handler',{runtime:'nodejs22.x',architectures:['arm64'],role:role.arn,handler:'index.handler',memorySize:256,timeout:30,code:new pulumi.asset.FileArchive('../build/api'),environment:{variables:{TABLE_NAME:table.name,BUCKET_NAME:bucket.bucket,SESSION_KEY:sessionKey,MEMBERSHIP_REPOSITORY:membershipRepository,ALLOWED_ORIGINS:allowedOrigins.join(',')}},tags});
+const fn=new aws.lambda.Function('api-handler',{runtime:'nodejs22.x',architectures:['arm64'],role:role.arn,handler:'index.handler',memorySize:256,timeout:30,code:new pulumi.asset.FileArchive('../build/api'),environment:{variables:{GITHUB_CLIENT_ID:githubClientId,GITHUB_CLIENT_SECRET:githubClientSecret,GITHUB_REDIRECT_URI:githubRedirectUri,TABLE_NAME:table.name,BUCKET_NAME:bucket.bucket,SESSION_KEY:sessionKey,MEMBERSHIP_REPOSITORY:membershipRepository,ALLOWED_ORIGINS:allowedOrigins.join(',')}},tags});
 new aws.cloudwatch.LogGroup('api-log-group',{name:pulumi.interpolate`/aws/lambda/${fn.name}`,retentionInDays:14,tags});
 const integration=new aws.apigatewayv2.Integration('lambda-integration',{apiId:api.id,integrationType:'AWS_PROXY',integrationUri:fn.arn,payloadFormatVersion:'2.0'});
 new aws.apigatewayv2.Route('api-route',{apiId:api.id,routeKey:'ANY /api/{proxy+}',target:pulumi.interpolate`integrations/${integration.id}`});

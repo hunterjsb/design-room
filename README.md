@@ -6,7 +6,11 @@ A shared design workspace with freeform canvases, Kanban boards, and Markdown do
 
 Open the `siteUrl` in [workspace.config.json](workspace.config.json). Workspace access follows **write, maintain, or admin membership** in the repository configured on the backend.
 
-For local GitHub CLI sign-in:
+Click **Sign in with GitHub**, approve the app, and return to your boards. The app requests only repository metadata read access and verifies your write membership before creating an 8-hour session. GitHub tokens are exchanged on the backend and discarded after verification.
+
+The workspace administrator enables this once with `npm run setup:github`. Follow its local registration link, register the preconfigured GitHub App, then install it on **only the membership repository**. The setup helper automatically stores the client secret as encrypted Pulumi configuration and deploys it to Lambda. Nothing secret goes into the public app or repository. GitHub App registration belongs to your GitHub account; the helper discards the unused app private key and webhook secret. Other members do not need to run setup or use a terminal.
+
+Optional developer fallback, for local GitHub CLI sign-in:
 
 ```sh
 npm ci
@@ -16,7 +20,7 @@ npm run login
 
 Then click **Connect local GitHub CLI** on the website. A one-use localhost bridge exchanges your existing GitHub sign-in for an 8-hour app session. The bridge accepts only the configured site origin and local development origins, and closes after connection or four minutes. Your browser may ask permission to access the local network. No GitHub token appears in the browser or command output.
 
-Alternatively, use a fine-grained GitHub personal access token with Metadata read access to the backend's membership repository. The API verifies identity and repository permissions, then discards the GitHub token. The app session stays in this browser tab's session storage. Removing membership prevents new sessions; already-issued sessions expire within eight hours.
+The Developer sign-in options also accept a fine-grained GitHub personal access token with Metadata read access to the backend's membership repository. The API verifies identity and repository permissions, then discards the GitHub token. The app session stays in this browser tab's session storage. Removing membership prevents new sessions; already-issued sessions expire within eight hours.
 
 ## Coding agents
 

@@ -6,3 +6,7 @@ config:
     - http://localhost:5173
     - http://127.0.0.1:5173
   # Set with: pulumi config set --secret sessionKey <random-value>
+  # Optional redirect sign-in (set by npm run setup:github):
+  # design-room:githubClientId: Iv1.EXAMPLE
+  # design-room:githubRedirectUri: https://OWNER.github.io/REPO/
+  # Store githubClientSecret with pulumi config set --secret.

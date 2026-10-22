@@ -2,7 +2,11 @@
 
 All routes are under the API URL in `workspace.config.json`. Responses are JSON unless noted. Board and catalog reads are strongly consistent. Data responses use `Cache-Control: no-store`.
 
-`POST /api/auth/github` accepts `{ "token": "GITHUB_TOKEN" }`. It verifies the token against GitHub and requires write membership in the configured repository. The response contains `token` (an 8-hour app JWT), `user`, and `expiresIn`. Do not save or log GitHub tokens. Subsequent requests use `Authorization: Bearer APP_JWT`.
+`GET /api/auth/github/config` returns public redirect settings (`configured`, `clientId`, `redirectUri`), never the client secret. The browser generates a random state and PKCE verifier, keeps them in tab session storage for at most ten minutes, and redirects to GitHub. On return it validates state, removes the callback code from the URL, and sends `{code, verifier}` to `POST /api/auth/github/callback`. The server exchanges the code with its secret, validates identity and membership, discards GitHub tokens, and returns the normal app session. Redirect URI and client ID are backend configuration, not caller-provided values. Invalid or expired callbacks never create a session.
+
+The one-time registration helper uses a GitHub App manifest with Metadata read permission only. The app must be installed on the membership repository before redirect sign-in can verify access. No broad `repo` OAuth scope is requested.
+
+For agents and developer fallbacks, `POST /api/auth/github` accepts `{ "token": "GITHUB_TOKEN" }`. It verifies the token against GitHub and requires write membership in the configured repository. The response contains `token` (an 8-hour app JWT), `user`, and `expiresIn`. Do not save or log GitHub tokens. Subsequent requests use `Authorization: Bearer APP_JWT`.
 
 | Route | Behavior |
 | --- | --- |
