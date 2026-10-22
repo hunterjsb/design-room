@@ -47,6 +47,8 @@ npm test
 npm run build
 ```
 
+The **Bug tracker** board type provides severity-filtered Kanban reports with reproduction steps, expected/actual behavior, environment, ownership and verification progress.
+
 Use a board’s menu to **Pin board** or **Unpin board**. Pins are shared across the workspace and appear above other boards. Pinned boards can be reordered within their section; archiving a board removes its pin.
 
 All views use live database editing. Kanban, documents, and freeform boards keep independent content. Wiki links such as `[[docs/example.md|Example]]` and `[[board:BOARD_ID#ITEM_ID|Item]]` work in notes and Markdown tables.
@@ -96,3 +98,5 @@ systemctl --user disable --now design-room-review-relay.service
 ```
 
 The service uses GitHub CLI credentials in memory, refreshes its API session, and remains quiet while healthy. It survives chat closure and starts on future logins; it requires this host and bridge to be running. `DESIGN_ROOM_BRIDGE`, `DESIGN_ROOM_SENDER` and `DESIGN_ROOM_API` override local defaults. The browser shows queued versus delivered-to-bridge status and a service heartbeat. Delivery is not agent review or build approval. The submission is the human's decision on the answered questions; canonical documentation and build planning stay with the coordinator.
+
+Questionnaires have a collapsed archive for completed questions. **Archive completed** preserves answers and receipts while removing those questions from the default agent context. Restore a question to reconsider it. Agents should read only a cited active question or immutable submission; use `context BOARD --item ITEM` for an explicitly cited archived item. The browser caches immutable submission snapshots instead of fetching their old answers on every refresh.
